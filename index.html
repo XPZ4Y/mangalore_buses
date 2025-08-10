@@ -2,197 +2,388 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- This is the corrected viewport meta tag for mobile responsiveness -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Autumn Page</title>
-    <!-- Tailwind CSS CDN for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Font - Inter -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+    <title>Bus Service App</title>
+
+    
     <style>
-        /* Custom font family for the entire page */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7f3f0; /* Soft off-white background */
-        }
-        /* Keyframes for the 'Hi Chris' floating animation */
-        @keyframes floatUp {
-            from {
-                transform: translateY(10px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        /* Keyframes for the 'Back' button's floating animation from the left */
-        @keyframes floatInFromLeft {
-            from {
-                transform: translateX(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+        /* Mobile-First Styling & Reset */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
         }
 
-        /* Apply the animations to the respective elements */
-        .float-up-animation {
-            animation: floatUp 1s ease-out forwards;
-        }
-        .float-in-from-left-animation {
-            animation: floatInFromLeft 1s ease-out forwards;
+        /*
+         * This CSS variable and JS snippet handles a common mobile browser issue where
+         * the address bar can cause `100vh` to be larger than the visible viewport.
+         * The JS recalculates this on every window resize.
+         */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+            height: calc(var(--vh, 1vh) * 100); /* Use our dynamic viewport height */
+            max-width: 100%;
+            margin: 0 auto;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: none;
+            background-color: #fff;
         }
 
-        /* Utility classes for smooth fading transitions */
-        .fade-in {
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-            opacity: 1;
+        /* On larger screens, the app will be centered and have a contained look */
+        @media (min-width: 420px) {
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            .app-container {
+                max-width: 420px;
+                height: 90vh; /* A bit smaller on desktop for a contained feel */
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+        }
+        
+        .header {
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background-color: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .search-bar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-group .icon {
+            position: absolute;
+            left: 14px;
+            color: #757575;
+            font-size: 18px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 40px;
+            border: 1px solid #ced4da;
+            border-radius: 24px;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s ease-in-out;
+            color: #333;
+            -webkit-appearance: none; /* iOS Safari fix for input styling */
+        }
+
+        .search-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+
+        .main-content {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #map-container {
+            flex-grow: 1;
+            background-color: #e0e0e0;
+            border-radius: 0;
+            touch-action: none; /* Prevents unwanted touch gestures on the map itself from interfering with scrolling */
+        }
+
+        .sliding-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+            max-height: 80vh;
+            background-color: #fff;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+            transform: translateY(calc(100% - 40px));
+            transition: transform 0.3s ease-in-out;
+            padding: 16px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            z-index: 10; /* Ensure it's above the map */
+        }
+
+        .sliding-panel.open {
             transform: translateY(0);
         }
-        .fade-out {
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-            opacity: 0;
-            transform: translateY(10px);
+
+        .sliding-panel .handle {
+            width: 48px;
+            height: 6px;
+            background-color: #9e9e9e;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            transition: background-color 0.2s ease-in-out;
         }
-        .fade-out-left {
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-            opacity: 0;
-            transform: translateX(-50px);
+
+        .sliding-panel:hover .handle {
+            background-color: #616161;
+        }
+
+        .panel-content {
+            width: 100%;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0 10px;
+            -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
+        }
+
+        .nav-content-section {
+            display: none;
+            padding-top: 10px;
+        }
+
+        .nav-content-section.active-content {
+            display: block;
+        }
+
+        .nav-content-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .nav-content-section p, .nav-content-section li {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .nav-content-section ul {
+            padding-left: 20px;
+        }
+
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            border-top: 1px solid #e0e0e0;
+            background-color: #fff;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+            z-index: 10; /* Ensure it's above the map and sliding panel handle */
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #757575;
+            font-size: 14px;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .nav-item .icon {
+            font-size: 26px;
+            margin-bottom: 6px;
+        }
+
+        .nav-item.active {
+            color: #007bff;
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4 md:p-8">
+<body>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+    
+     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
 
-    <!-- Main container for the content -->
-    <div id="mainContainer" class="w-full max-w-lg mx-auto text-center flex flex-col items-center">
+    <div class="app-container">
 
-        <!-- Initial content: Heading and form -->
-        <div id="formContainer" class="w-full">
-            <h1 class="text-5xl md:text-6xl font-extrabold text-amber-700 mb-10 float-up-animation">
-                Hi Chris
-            </h1>
-
-            <div class="space-y-6">
-                <!-- 'From' input bar -->
-                <input
-                    id="fromInput"
-                    type="text"
-                    placeholder="from"
-                    class="w-full px-4 py-3 text-lg text-gray-800 placeholder-gray-500 bg-white border border-gray-300 rounded-xl shadow-lg transition-all duration-300 ease-in-out
-                           focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none"
-                >
-
-                <!-- 'To' input bar -->
-                <input
-                    id="toInput"
-                    type="text"
-                    placeholder="to"
-                    class="w-full px-4 py-3 text-lg text-gray-800 placeholder-gray-500 bg-white border border-gray-300 rounded-xl shadow-lg transition-all duration-300 ease-in-out
-                           focus:ring-2 focus:ring-amber-500 focus:border-transparent focus:outline-none"
-                >
-
-                <!-- Send button - initially hidden -->
-                <button
-                    id="sendButton"
-                    class="w-full mt-6 px-4 py-3 text-lg font-bold text-white bg-amber-600 rounded-xl shadow-lg transition-all duration-300 ease-in-out
-                           hover:bg-amber-700 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:outline-none hidden"
-                >
-                    Send
-                </button>
+        <header class="header">
+            <div class="search-bar-container">
+                <div class="input-group">
+                    <span class="icon">📍</span>
+                    <input type="text" id="from-input" class="search-input" placeholder="From">
+                </div>
+                <div class="input-group">
+                    <span class="icon">🏁</span>
+                    <input type="text" id="to-input" class="search-input" placeholder="To">
+                </div>
             </div>
-        </div>
+        </header>
 
-        <!-- Content after sending: Map and Back button -->
-        <div id="mapContainer" class="w-full flex-col items-center space-y-6 hidden">
-            <!-- Back button -->
-            <button
-                id="backButton"
-                class="px-6 py-3 text-lg font-bold text-white bg-gray-500 rounded-full shadow-lg transition-all duration-300 ease-in-out
-                       hover:bg-gray-600 focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:outline-none hidden"
-            >
-                &larr; Back
-            </button>
+        <main class="main-content">
+            <div id="map-container"></div>
 
-            <!-- Placeholder for the map -->
-            <!-- A real map would require an API, but for a static page, an image is a great stand-in. -->
-            <div class="w-full h-80 bg-cover bg-center rounded-xl shadow-lg"
-                 style="background-image: url('https://placehold.co/800x400/967d60/ffffff?text=Map+Template')">
+            <div class="sliding-panel">
+                <div class="handle"></div>
+                <div class="panel-content">
+                    
+                    <div id="home-content" class="nav-content-section active-content">
+                        <h3>Welcome!</h3>
+                        <p>Enter your starting point and destination above to find bus routes.</p>
+                        <p>You can also browse nearby buses and your profile using the navigation below.</p>
+                    </div>
+
+                    <div id="buses-content" class="nav-content-section">
+                        <h3>Nearby Buses</h3>
+                        <p>Real-time information about nearby bus routes and estimated arrival times would be displayed here.</p>
+                        <ul>
+                            <li><strong>Route KSRTC-101</strong> - Towards City Bus Stand - Expected in 3 mins</li>
+                            <li><strong>Route PMPSL-22A</strong> - Towards Mangala Devi Temple - Expected in 7 mins</li>
+                            <li><strong>Route KSRTC-45</strong> - Towards State Bank - Expected in 15 mins</li>
+                        </ul>
+                    </div>
+
+                    <div id="profile-content" class="nav-content-section">
+                        <h3>User Profile</h3>
+                        <p>Manage your saved places, notification settings, and view your travel history here.</p>
+                        <ul>
+                            <li><strong>Saved Places:</strong> Home, Work</li>
+                            <li><strong>Notifications:</strong> Enabled for route 101</li>
+                        </ul>
+                    </div>
+
+                </div>
             </div>
-        </div>
+        </main>
+
+        <footer class="bottom-nav">
+            <a href="#" class="nav-item active" data-target="home-content">
+                <span class="icon">🏠</span>
+                <span>Home</span>
+            </a>
+            <a href="#" class="nav-item" data-target="buses-content">
+                <span class="icon">🚌</span>
+                <span>Buses</span>
+            </a>
+            <a href="#" class="nav-item" data-target="profile-content">
+                <span class="icon">👤</span>
+                <span>Profile</span>
+            </a>
+        </footer>
 
     </div>
 
     <script>
-        // Get references to all the elements we'll be interacting with
-        const formContainer = document.getElementById('formContainer');
-        const fromInput = document.getElementById('fromInput');
-        const toInput = document.getElementById('toInput');
-        const sendButton = document.getElementById('sendButton');
+        // JS to handle dynamic viewport height on mobile
+        let vh = window.innerHeight * 0.01;
+        var map = L.map('map-container').setView([12.9141, 74.8560], 13);
+        let from = document.getElementById('from-input');
+        let to = document.getElementById('to-input')
 
-        const mapContainer = document.getElementById('mapContainer');
-        const backButton = document.getElementById('backButton');
+        // Add a tile layer to the map (this is the base map)
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
 
-        // Function to check if both fields are filled and toggle the button's visibility
-        function toggleSendButton() {
-            if (fromInput.value.trim() !== '' && toInput.value.trim() !== '') {
-                sendButton.classList.remove('hidden');
-            } else {
-                sendButton.classList.add('hidden');
+        // Optional: Add a marker to a specific location
+        var marker = L.marker([12.9141, 74.8560]).addTo(map);
+        marker.bindPopup("<b>Man!</b><br>You are in mangalore!").openPopup();
+
+
+
+        // Optional: Add a circle
+        /*var circle = L.circle([51.508, -0.11], {
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0.5,
+            radius: 500
+        }).addTo(map).bindPopup("I am a circle.");
+
+        // Optional: Add a polygon
+        var polygon = L.polygon([
+            [51.509, -0.08],
+            [51.503, -0.06],
+            [51.51, -0.047]
+        ]).addTo(map).bindPopup("I am a polygon.");*/
+
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+        window.addEventListener('resize', () => {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        });
+        to.addEventListener('keydown', (o)=>{if(o.key=='Enter'){sendRequest(from.value+'()'+to.value)}})
+
+        async function sendRequest(message) {//communicate with the server
+            
+            if (!message) return;
+                    const response = await fetch('http://192.168.189.18:3000/message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message }),
+                    });
+
+                    const data = await response.json();
+                    console.log(data)
+                    alert(data.response)
+
             }
-        }
+        
 
-        // Function to handle the "Send" button click
-        function handleSend() {
-            // Start fading out the form container
-            formContainer.classList.add('fade-out');
+        document.addEventListener('DOMContentLoaded', () => {
+            const slidingPanel = document.querySelector('.sliding-panel');
+            const handle = document.querySelector('.handle');
+            const navItems = document.querySelectorAll('.nav-item');
+            const navSections = document.querySelectorAll('.nav-content-section');
 
-            // Wait for the fade-out transition to finish, then hide the element and show the map
-            setTimeout(() => {
-                formContainer.classList.add('hidden');
-                formContainer.classList.remove('fade-out');
-                
-                // Show the map container and apply the fade-in animation
-                mapContainer.classList.remove('hidden');
-                
-                // Show the back button and trigger its floating animation
-                backButton.classList.remove('hidden');
-                backButton.classList.add('float-in-from-left-animation');
-            }, 500); // Duration matches the CSS transition time
-        }
+            slidingPanel.addEventListener('click', () => {
+                slidingPanel.classList.toggle('open');
+            });
+            handle.addEventListener('click', (event) => {
+                event.stopPropagation();
+                slidingPanel.classList.toggle('open');
+            });
 
-        // Function to handle the "Back" button click
-        function handleBack() {
-            // Start fading out the map and back button
-            mapContainer.classList.add('fade-out');
-            backButton.classList.add('fade-out-left');
+            navItems.forEach(item => {
+                item.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    item.classList.add('active');
 
-            // Wait for the fade-out transition to finish, then hide the map and show the form
-            setTimeout(() => {
-                mapContainer.classList.add('hidden');
-                mapContainer.classList.remove('fade-out');
-                backButton.classList.remove('float-in-from-left-animation');
-                backButton.classList.add('hidden');
+                    const targetId = item.getAttribute('data-target');
 
-                // Clear input values
-                fromInput.value = '';
-                toInput.value = '';
+                    navSections.forEach(section => section.classList.remove('active-content'));
 
-                // Show the form container and apply fade-in animation
-                formContainer.classList.remove('hidden');
-                toggleSendButton(); // Hide the send button again
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.classList.add('active-content');
+                    }
 
-            }, 500); // Duration matches the CSS transition time
-        }
-
-        // Event listeners
-        fromInput.addEventListener('input', toggleSendButton);
-        toInput.addEventListener('input', toggleSendButton);
-        sendButton.addEventListener('click', handleSend);
-        backButton.addEventListener('click', handleBack);
+                    if (!slidingPanel.classList.contains('open')) {
+                        slidingPanel.classList.add('open');
+                    }
+                });
+            });
+        });
     </script>
-
 </body>
 </html>
