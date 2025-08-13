@@ -35,6 +35,7 @@
         
         /* Styles for the floating bottom navigation bar */
         .bottom-nav {
+z-index: 1000;
             position: fixed;
             bottom: 1rem; /* "Bring it a bit up" with a margin from the bottom */
             left: 1rem;
@@ -63,6 +64,7 @@
                 max-width: 384px; /* Matches the max-w-sm of the container for alignment */
                 left: 50%;
                 transform: translateX(-50%);
+
             }
         }
 
@@ -99,7 +101,7 @@
 
         .bus-service-page .map-container {
             position: relative;
-            height:80%; /* Increased height for the map */
+            height:50%; /* Increased height for the map */
             background-color: #d1d1d1;
             border-bottom: 1px solid #e0e0e0;
         }
