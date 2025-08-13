@@ -35,12 +35,11 @@
         
         /* Styles for the floating bottom navigation bar */
         .bottom-nav {
-z-index: 1000;
+            z-index: 1000;
             position: fixed;
             bottom: 1rem; /* "Bring it a bit up" with a margin from the bottom */
             left: 1rem;
             right: 1rem;
-            z-index: 100; /* Ensure it stays on top of other content */
             border-radius: 1.5rem; /* Rounded corners for the floating bar */
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
@@ -64,7 +63,6 @@ z-index: 1000;
                 max-width: 384px; /* Matches the max-w-sm of the container for alignment */
                 left: 50%;
                 transform: translateX(-50%);
-
             }
         }
 
@@ -101,9 +99,10 @@ z-index: 1000;
 
         .bus-service-page .map-container {
             position: relative;
-            height:50%; /* Increased height for the map */
+            flex-grow: 1;
             background-color: #d1d1d1;
             border-bottom: 1px solid #e0e0e0;
+            z-index: 1;
         }
 
         .bus-service-page .menu-icon {
@@ -117,34 +116,57 @@ z-index: 1000;
             cursor: pointer;
             z-index: 400; /* Ensure it's above the map tiles */
         }
-        
-        .bus-service-page .main-content {
+
+        /* New widget styles */
+        .bus-widget-container {
             position: absolute;
-            bottom: 6rem;
+            bottom: 0;
             left: 0;
             right: 0;
+            background-color: white;
+            border-top-left-radius: 1.5rem;
+            border-top-right-radius: 1.5rem;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+            padding: 1.5rem 1rem;
+            z-index: 500;
+            transition: transform 0.3s ease-out;
+        }
+        
+        .bus-widget-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        
+        .bus-widget-content {
+            overflow-x: hidden;
+        }
+        
+        .widget-content-slider {
             display: flex;
-            justify-content: center;
+            transition: transform 0.3s ease-out;
+        }
+        
+        .bus-list, .bus-details {
+            min-width: 100%;
+        }
+        
+        .bus-button {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 1rem;
-            z-index: 400; /* Ensure it's above the map tiles */
-        }
-
-        .bus-service-page .action-button {
-            width: 80%;
-            padding: 15px 20px;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #ffffff;
-            background-color: #f97316; /* Autumn orange */
-            border: none;
-            border-radius: 50px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background-color: #fef3c7;
+            border-radius: 0.75rem;
+            margin-bottom: 0.75rem;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.2s ease;
         }
-
-        .bus-service-page .action-button:hover {
-            background-color: #ea580c; /* A darker shade for hover */
+        
+        .bus-button:hover {
+            background-color: #fcd34d;
         }
 
         /* Styles for the dropdown suggestions */
@@ -206,9 +228,29 @@ z-index: 1000;
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossorigin=""></script>
-    <script type="text/javascript" src='database.js'></script>
     
     <script>
+        const dakshinaKannadaTaluks = [
+            ['Mangaluru', [12.87, 74.88]],
+            ['Bantwal', [12.89, 75.05]],
+            ['Belthangady', [13.01, 75.29]],
+            ['Puttur', [12.77, 75.19]],
+            ['Sullia', [12.57, 75.39]],
+            ['Moodabidri', [13.08, 74.99]],
+            ['Kadaba', [12.75, 75.25]],
+            ['Mulki', [13.09, 74.80]],
+            ['Ullal', [12.82, 74.83]]
+        ];
+
+        // Dummy data for bus routes
+        const busesNearMe = [
+            { id: 1, name: 'Bus 12A', reachTime: '5 min', route: 'Mangaluru to Bantwal' },
+            { id: 2, name: 'Bus 5B', reachTime: '12 min', route: 'Mangaluru to Moodabidri' },
+            { id: 3, name: 'Bus 7C', reachTime: '15 min', route: 'Puttur to Sullia' },
+            { id: 4, name: 'Bus 22', reachTime: '20 min', route: 'Belthangady to Ullal' },
+            { id: 5, name: 'Bus 3D', reachTime: '25 min', route: 'Kadaba to Mulki' },
+        ];
+
         // Global state object to persist data across page changes
         const user = {
             from: '',
@@ -307,8 +349,24 @@ z-index: 1000;
             
             const busPageHTML = `
                 <div class="app-container bus-service-page">
-                    <div id="map" style="height: 100%; width: 100%;"></div>
-                    
+                    <div id="map" class="map-container"></div>
+                    <div class="menu-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </div>
+                    <div class="bus-widget-container">
+                        <div class="flex justify-between items-center">
+                            <h2 class="bus-widget-title">Buses Near Me</h2>
+                            <button id="bus-widget-back-btn" class="text-gray-500 hover:text-gray-700 transition-colors duration-200 hidden">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                            </button>
+                        </div>
+                        <div class="bus-widget-content">
+                            <div id="widget-content-slider" class="widget-content-slider">
+                                <div id="bus-list" class="bus-list"></div>
+                                <div id="bus-details" class="bus-details pl-4"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
 
@@ -573,7 +631,52 @@ z-index: 1000;
                         console.error('Failed to initialize map:', e);
                     }
                 }
+                
+                // Initialize the bus widget
+                const busListDiv = document.getElementById('bus-list');
+                const busDetailsDiv = document.getElementById('bus-details');
+                const widgetSlider = document.getElementById('widget-content-slider');
+                const backBtn = document.getElementById('bus-widget-back-btn');
+
+                // Populate the bus list
+                busListDiv.innerHTML = busesNearMe.map(bus => `
+                    <button class="bus-button text-gray-800" data-bus-id="${bus.id}">
+                        <span>${bus.name}</span>
+                        <span class="font-semibold text-orange-500">${bus.reachTime}</span>
+                    </button>
+                `).join('');
+
+                // Add event listeners for bus buttons
+                document.querySelectorAll('.bus-button').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const busId = event.currentTarget.dataset.busId;
+                        const selectedBus = busesNearMe.find(bus => bus.id == busId);
+                        
+                        // Slide to the details view
+                        widgetSlider.style.transform = 'translateX(-100%)';
+                        backBtn.classList.remove('hidden');
+
+                        // Populate the details view
+                        busDetailsDiv.innerHTML = `
+                            <div class="space-y-4">
+                                <h3 class="text-xl font-bold text-gray-800">${selectedBus.name}</h3>
+                                <p class="text-gray-600">Arriving in: <span class="font-semibold text-orange-500">${selectedBus.reachTime}</span></p>
+                                <p class="text-gray-600">Route: ${selectedBus.route}</p>
+                                <p class="text-sm text-gray-400">Additional bus information would go here.</p>
+                            </div>
+                        `;
+                    });
+                });
+
+                // Add event listener for the back button
+                if (backBtn) {
+                    backBtn.addEventListener('click', () => {
+                        widgetSlider.style.transform = 'translateX(0)';
+                        backBtn.classList.add('hidden');
+                    });
+                }
             }
+            
             function initializeSignupPage() {
                 const togglePassword = document.getElementById('toggle-password');
                 const passwordInput = document.getElementById('password');
